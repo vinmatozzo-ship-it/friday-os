@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Friday</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0; height: 100dvh; display: flex; flex-direction: column;
+    font: 15px/1.4 -apple-system, system-ui, sans-serif;
+    background: #0b0c10; color: #eaeaea;
+  }
+  header { padding: 12px 16px; border-bottom: 1px solid #222; display: flex; gap: 8px; align-items: center; }
+  header h1 { font-size: 16px; margin: 0; flex: 1; }
+  select, input[type=password] { background: #16171d; color: #eaeaea; border: 1px solid #2a2b33; border-radius: 6px; padding: 6px 8px; font-size: 13px; }
+  #log { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 85%; padding: 8px 12px; border-radius: 12px; white-space: pre-wrap; word-break: break-word; }
+  .user { align-self: flex-end; background: #2b5cff; color: white; }
+  .assistant { align-self: flex-start; background: #1c1d24; }
+  .system { align-self: center; color: #888; font-size: 12px; }
+  form { display: flex; gap: 8px; padding: 12px 16px calc(env(safe-area-inset-bottom, 0) + 12px); border-top: 1px solid #222; }
+  textarea { flex: 1; resize: none; background: #16171d; color: #eaeaea; border: 1px solid #2a2b33; border-radius: 10px; padding: 10px 12px; font-size: 15px; height: 44px; }
+  button { background: #2b5cff; color: white; border: none; border-radius: 10px; padding: 0 18px; font-size: 15px; }
+  button:disabled { opacity: 0.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Friday</h1>
+  <select id="provider">
+    <option value="claude">Claude</option>
+    <option value="gpt">GPT</option>
+    <option value="kimi">Kimi</option>
+    <option value="qwen">Qwen</option>
+  </select>
+</header>
+<div id="log"></div>
+<form id="form">
+  <textarea id="input" placeholder="Message Friday..." autofocus></textarea>
+  <button type="submit">Send</button>
+</form>
+
+<script>
+  const log = document.getElementById("log");
+  const form = document.getElementById("form");
+  const input = document.getElementById("input");
+  const providerSel = document.getElementById("provider");
+
+  let token = localStorage.getItem("friday_token") || "";
+  let sessionId = localStorage.getItem("friday_session") || null;
+
+  if (!token) {
+    token = prompt("App token:") || "";
+    localStorage.setItem("friday_token", token);
+  }
+
+  function addMsg(role, text) {
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+    input.value = "";
+    addMsg("user", message);
+    const btn = form.querySelector("button");
+    btn.disabled = true;
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-app-token": token },
+        body: JSON.stringify({ message, sessionId, provider: providerSel.value }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      sessionId = data.sessionId;
+      localStorage.setItem("friday_session", sessionId);
+      addMsg("assistant", data.reply);
+    } catch (err) {
+      addMsg("system", "Error: " + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
