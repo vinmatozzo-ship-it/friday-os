@@ -1,5 +1,6 @@
 const { getSupabase } = require("../../src/lib/supabase");
 const { callProvider } = require("../../src/lib/providers");
+const { listFolder } = require("../../src/lib/msgraph");
 
 const HISTORY_LIMIT = 20;
 const MEMORY_LIMIT = 10;
@@ -59,11 +60,22 @@ exports.handler = async (event) => {
     .limit(MEMORY_LIMIT);
   if (memoryErr) return { statusCode: 500, body: `memory fetch failed: ${memoryErr.message}` };
 
+  let pvgBrainListing = [];
+  try {
+    pvgBrainListing = (await listFolder(process.env.ONEDRIVE_FOLDER_PATH || "PVG-Brain")) || [];
+  } catch {
+    pvgBrainListing = [];
+  }
+
   const systemPrompt = [
     "You are Friday, a personal assistant with access to persisted memory.",
     "Relevant memory entries:",
     ...(memory || []).map((m) => `- [${m.category}] ${m.key}: ${m.content}`),
-  ].join("\n");
+    pvgBrainListing.length ? "\nFiles currently in the PVG Brain folder:" : "",
+    ...pvgBrainListing.map((f) => `- [${f.type}] ${f.name}`),
+  ]
+    .filter(Boolean)
+    .join("\n");
 
   let reply;
   try {
