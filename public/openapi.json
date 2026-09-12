@@ -1,0 +1,81 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "Friday OS Bridge", "version": "1.0.0" },
+  "servers": [{ "url": "https://friday-os-jarvis.netlify.app/api" }],
+  "paths": {
+    "/brain": {
+      "get": {
+        "operationId": "listPvgBrainFolder",
+        "summary": "List files/folders in the PVG Brain OneDrive folder",
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Folder path to list; defaults to the root PVG-Brain folder"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": { "type": "string" },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "type": { "type": "string", "enum": ["file", "folder"] }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory": {
+      "get": {
+        "operationId": "listMemories",
+        "summary": "List recent shared memory entries",
+        "responses": { "200": { "description": "OK" } }
+      },
+      "post": {
+        "operationId": "rememberFact",
+        "summary": "Save a fact to shared memory (visible to Claude too)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["key", "content"],
+                "properties": {
+                  "key": { "type": "string" },
+                  "content": { "type": "string" },
+                  "category": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": { "type": "http", "scheme": "bearer" }
+    }
+  },
+  "security": [{ "bearerAuth": [] }]
+}

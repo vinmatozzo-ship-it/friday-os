@@ -1,6 +1,7 @@
 const { getSupabase } = require("../../src/lib/supabase");
 const { callProvider } = require("../../src/lib/providers");
 const { listFolder } = require("../../src/lib/msgraph");
+const { isAuthorized } = require("../../src/lib/auth");
 
 const HISTORY_LIMIT = 20;
 const MEMORY_LIMIT = 10;
@@ -10,10 +11,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: "method not allowed" };
   }
 
-  if (
-    !process.env.APP_SHARED_SECRET ||
-    event.headers["x-app-token"] !== process.env.APP_SHARED_SECRET
-  ) {
+  if (!isAuthorized(event)) {
     return { statusCode: 401, body: "unauthorized" };
   }
 
