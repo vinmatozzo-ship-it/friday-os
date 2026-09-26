@@ -1,5 +1,6 @@
 const { isAuthorized } = require("../../src/lib/auth");
 const { listFolder } = require("../../src/lib/msgraph");
+const { resolveBrainPath } = require("../../src/lib/brain-path");
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "GET") {
@@ -9,9 +10,15 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: "unauthorized" };
   }
 
-  const path = (event.queryStringParameters && event.queryStringParameters.path) ||
-    process.env.ONEDRIVE_FOLDER_PATH ||
-    "PVG-Brain";
+  let path;
+  try {
+    path = resolveBrainPath(
+      event.queryStringParameters && event.queryStringParameters.path,
+      process.env.ONEDRIVE_FOLDER_PATH || "PVG-Brain"
+    );
+  } catch {
+    return { statusCode: 400, body: "invalid PVG Brain path" };
+  }
 
   let items;
   try {
